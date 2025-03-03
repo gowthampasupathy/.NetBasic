@@ -54,13 +54,20 @@ namespace WebApplication1.Controllers
                 return Unauthorized("Invalid username or password.");
             }else{
                 var token =GenerateToken(credential.name);
-                return Ok(new {AccessTokenResponse =new JwtSecurityTokenHandler().WriteToken(token)});
+                Response.Cookies.Append("jwt",token,new CookieOptions
+                {
+                    HttpOnly=true,
+                    Secure=true,
+                    SameSite=SameSiteMode.Strict,
+                    Expires=DateTime.UtcNow.AddDays(1)
+                });
+                return Ok(token);
             }
 
             
         }
 
-        private JwtSecurityToken GenerateToken (String name){
+        private String GenerateToken (String name){
             var claims=new List<Claim>
             {
                 new Claim(ClaimTypes.Name,name)
@@ -72,7 +79,7 @@ namespace WebApplication1.Controllers
                 expires:DateTime.Now.AddDays(1),
                 signingCredentials:new SigningCredentials( new SymmetricSecurityKey(Encoding.UTF8.GetBytes("ihgigiugughugujhuigkujgbkugiugiujgbiugiugbiugiug")),SecurityAlgorithms.HmacSha256)
             );
-            return token;
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
 
