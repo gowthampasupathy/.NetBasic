@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.VisualBasic;
 
 namespace WebApplication1.Data
 {
@@ -11,12 +12,17 @@ namespace WebApplication1.Data
             Configuration=configuration;
 
         }
+    
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             optionsBuilder.UseNpgsql(Configuration.GetConnectionString("WebApiDatabase"));
 
         }
+        
         public DbSet<Employee> Employees {get; set;}
+        public DbSet<Credential> Credentials {get; set;}
+        
+        
     }
 }

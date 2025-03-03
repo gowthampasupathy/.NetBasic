@@ -1,5 +1,8 @@
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using WebApplication1.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,6 +13,25 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 
 builder.Services.AddControllers();
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+.AddJwtBearer(options=>
+{
+    options.RequireHttpsMetadata=false;
+    options.SaveToken=true;
+    options.TokenValidationParameters= new TokenValidationParameters
+    {
+        ValidateIssuer=false,
+        ValidateAudience=false,
+        ValidateLifetime=true,
+        ValidIssuer="",
+        ValidAudience="",
+        IssuerSigningKey=new SymmetricSecurityKey(Encoding.UTF8.GetBytes("ihgigiugughugujhuigkujgbkugiugiujgbiugiugbiugiug"))
+
+    }; 
+
+});
+
 
 var app = builder.Build();
 
