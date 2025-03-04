@@ -130,3 +130,4 @@ E:\.NetCore\SampleProject\WebApplication1\bin\Debug\net9.0\Microsoft.IdentityMod
 E:\.NetCore\SampleProject\WebApplication1\bin\Debug\net9.0\Microsoft.IdentityModel.Tokens.dll
 E:\.NetCore\SampleProject\WebApplication1\bin\Debug\net9.0\System.IdentityModel.Tokens.Jwt.dll
 E:\.NetCore\SampleProject\WebApplication1\obj\Debug\net9.0\WebApplication1.sourcelink.json
+E:\.NetCore\SampleProject\WebApplication1\bin\Debug\net9.0\BCrypt.Net-Next.dll

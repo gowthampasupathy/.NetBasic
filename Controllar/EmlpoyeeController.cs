@@ -10,10 +10,13 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.BearerToken;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using BCrypt.Net;
+using System.Security.Cryptography;
+using System.Net;
 
 namespace WebApplication1.Controllers 
 {
-    [Route("api/employees")] 
+    [Route("api")] 
     [ApiController]
     public class EmployeeController : ControllerBase
     {
@@ -25,7 +28,7 @@ namespace WebApplication1.Controllers
         }
 
         [Authorize]
-        [HttpGet]
+        [HttpGet("employees")]
         public IActionResult GetEmployees()
         {
             var employees = _context.Employees.OrderByDescending(c => c.Id).ToList();   
@@ -38,6 +41,20 @@ namespace WebApplication1.Controllers
             return Ok(employees);
         }
 
+        [HttpPost("register")]
+        public IActionResult Register([FromBody] Credential credential)
+        {
+            if (credential == null || string.IsNullOrEmpty(credential.name) || string.IsNullOrEmpty(credential.password))
+            {
+                return BadRequest("Invalid credentials.");
+            }
+            credential.password= BCrypt.Net.BCrypt.HashPassword(credential.password);
+            credential.Id=RandomNumberGenerator.GetInt32(1,100000);
+            _context.Credentials.Add(credential);
+            _context.SaveChanges();
+            return Ok("User Registered Successfully");
+        }
+
         [HttpPost("auth")]
         public IActionResult Authenticate([FromBody] Credential credential)
         {
@@ -46,18 +63,15 @@ namespace WebApplication1.Controllers
             {
                 return BadRequest("Invalid credentials.");
             }
-            var user = _context.Credentials
-                .FromSqlRaw("SELECT * FROM \"Credentials\" WHERE name = {0} AND password = {1}",
-                            credential.name, credential.password)
-                .FirstOrDefault();
-
-            if (user == null)
-            {
-                return Unauthorized("Invalid username or password.");
-            }else{
+            var user = _context.Credentials.FirstOrDefault(e=>e.name==credential.name);
+            if(user==null||!BCrypt.Net.BCrypt.Verify(credential.password,user.password)){
+                return BadRequest("Invalid Username or Password");
+            }
+            else{
                 var token =GenerateToken(credential.name);
+                var refreshtoken=GenerateRefreshToken();
                 //here the token is get stored in the cookies for the future purpose
-                Response.Cookies.Append("jwt",token,new CookieOptions
+                Response.Cookies.Append("refreshtoken",refreshtoken,new CookieOptions
                 {
                     HttpOnly=true,
                     Secure=true,
@@ -65,11 +79,26 @@ namespace WebApplication1.Controllers
                     Expires=DateTime.UtcNow.AddDays(1)
                 });
                 return Ok(token);
-            }
-
-            
+            } 
         }
 
+        [HttpGet("Refresh")]
+        public IActionResult Refresh([FromBody] Credential credential){
+            if(!Request.Cookies.TryGetValue("refreshtoken",out var refreshtoken)){
+                return BadRequest("Refresh Token Expired Please Login again");
+            }
+
+            var accessToken =GenerateToken(credential.name);
+
+            return Ok (accessToken);
+        }
+
+
+        [HttpPost("logout")]
+        public IActionResult Logout(){
+            Response.Cookies.Delete("refreshtoken");
+            return Ok("Log Out Successfully");
+        }
         private String GenerateToken (String name){
             //the claims is used to store the user name for future purpose
             var claims=new List<Claim>
@@ -82,10 +111,14 @@ namespace WebApplication1.Controllers
                 issuer:"",
                 audience:"",
                 claims:claims,
-                expires:DateTime.Now.AddDays(1),
+                expires:DateTime.Now.AddMinutes(5),
                 signingCredentials:new SigningCredentials( new SymmetricSecurityKey(Encoding.UTF8.GetBytes("ihgigiugughugujhuigkujgbkugiugiujgbiugiugbiugiug")),SecurityAlgorithms.HmacSha256)
             );
             return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        private String GenerateRefreshToken(){
+           return Convert.ToBase64String(RandomNumberGenerator.GetBytes(64)); 
         }
         ///First create a table name Credentials wiht column id,name,password(Just for testing purpose) and add sample data in it
         ///In Postman  http://localhost:5226/api/employees/auth with this url in the post request
