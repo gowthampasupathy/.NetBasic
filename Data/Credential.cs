@@ -11,5 +11,7 @@ namespace WebApplication1.Data
         public int Id {get;set;}
         public String name {get; set;}
         public String password {get; set;}
+
+        public String Role {get; set;}
     }
 }

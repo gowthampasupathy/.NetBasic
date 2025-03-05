@@ -21,24 +21,34 @@ namespace WebApplication1.Controllers
     public class EmployeeController : ControllerBase
     {
         private readonly AppDbContext _context;
+        public readonly CsvImple _csvImple;
 
-        public EmployeeController(AppDbContext context) 
+        public EmployeeController(AppDbContext context,CsvImple _csvImple) 
         {
             _context = context;
+            this._csvImple = _csvImple;
         }
 
-        [Authorize]
+        //[Authorize(Roles ="Admin")]
         [HttpGet("employees")]
         public IActionResult GetEmployees()
         {
-            var employees = _context.Employees.OrderByDescending(c => c.Id).ToList();   
+            //var employees = _context.Employees.OrderByDescending(c => c.Id).ToList(); 
 
-            if (employees == null || employees.Count == 0)
+            var Path = @"E:\.NetCore\SampleProject\WebApplication1\Constant.csv"; //add this line in that file to get the constant value
+            
+            // if (employees == null || employees.Count == 0)
+            // {
+            //     return NotFound("No employees found in the database.");
+            // }
+             if (!System.IO.File.Exists(Path))
             {
-                return NotFound("No employees found in the database.");
+                return NotFound("CSV file not found.");
             }
+            var constant=_csvImple.LoadConstants(Path); //add this line in that file to get the constant value
 
-            return Ok(employees);
+
+            return Ok(constant.ElementAt(0).Key);
         }
 
         [HttpPost("register")]
@@ -68,10 +78,10 @@ namespace WebApplication1.Controllers
                 return BadRequest("Invalid Username or Password");
             }
             else{
-                var token =GenerateToken(credential.name);
+                var token =GenerateToken(credential.name,credential.Role);
                 var refreshtoken=GenerateRefreshToken();
                 //here the token is get stored in the cookies for the future purpose
-                Response.Cookies.Append("refreshtoken",refreshtoken,new CookieOptions
+                Response.Cookies.Append("jwt",token,new CookieOptions
                 {
                     HttpOnly=true,
                     Secure=true,
@@ -88,7 +98,7 @@ namespace WebApplication1.Controllers
                 return BadRequest("Refresh Token Expired Please Login again");
             }
 
-            var accessToken =GenerateToken(credential.name);
+            var accessToken =GenerateToken(credential.name,credential.Role);
 
             return Ok (accessToken);
         }
@@ -99,11 +109,12 @@ namespace WebApplication1.Controllers
             Response.Cookies.Delete("refreshtoken");
             return Ok("Log Out Successfully");
         }
-        private String GenerateToken (String name){
+        private String GenerateToken (String name,String role){
             //the claims is used to store the user name for future purpose
             var claims=new List<Claim>
             {
-                new Claim(ClaimTypes.Name,name)
+                new Claim(ClaimTypes.Name,name),
+                new Claim(ClaimTypes.Role,role)
             };
             //here the token is get generated in that token the username is get stored through the claims
             //ihgigiugughugujhuigkujgbkugiugiujgbiugiugbiugiug this is the key used to generate the token you may give random value in it 

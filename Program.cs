@@ -2,7 +2,9 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using WebApplication1.Controllers;
 using WebApplication1.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -32,9 +34,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 });
 
+builder.Services.AddAuthorization(Options=>{
+    Options.AddPolicy("Adminonly",policy=>policy.RequireRole("Admin"));
+
+});
+
+builder.Services.AddSingleton<CsvImple>();
 
 var app = builder.Build();
-
 
 app.UseHttpsRedirection();
 
